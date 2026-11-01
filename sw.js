@@ -1,0 +1,13 @@
+const PREFIX='hokuriku-sakura-shell-'+new URL(self.registration.scope).pathname+'-';
+const CACHE=PREFIX+'v2';
+const SHELL=['./','./index.html','./styles.css','./app.js','./manifest.webmanifest','./icons/icon-192.png','./icons/icon-512.png','./icons/icon-maskable.png',"./assets/pikmin-banner.jpg","./assets/pikmin-garden.png","./assets/pokemon.json","./assets/pokemon/658.png","./assets/pokemon/448.png","./assets/pokemon/778.png","./assets/pokemon/006.png","./assets/pokemon/197.png","./assets/pokemon/700.png","./assets/pokemon/445.png","./assets/pokemon/384.png","./assets/pokemon/282.png","./assets/pokemon/094.png","./assets/pokemon/887.png","./assets/pokemon/248.png","./assets/pokemon/001.png","./assets/pokemon/849.png","./assets/pokemon/249.png","./assets/pokemon/722.png","./assets/pokemon/681.png","./assets/pokemon/609.png","./assets/pokemon/025.png","./assets/pokemon/133.png"];
+self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(SHELL))));
+// 等所有舊視窗關閉才啟用，避免開啟中的編輯介面混用新舊版本。
+self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith(PREFIX)&&k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
+self.addEventListener('fetch',event=>{
+ const url=new URL(event.request.url);if(event.request.method!=='GET'||url.origin!==self.location.origin)return;
+ const scope=new URL(self.registration.scope);if(!url.pathname.startsWith(scope.pathname))return;
+ if(event.request.mode==='navigate'){event.respondWith(caches.match(new URL('./index.html',scope)).then(cached=>cached||fetch(event.request)));return;}
+ if(!SHELL.some(path=>new URL(path,scope).pathname===url.pathname))return;
+ event.respondWith(caches.match(event.request).then(cached=>cached||fetch(event.request)));
+});
