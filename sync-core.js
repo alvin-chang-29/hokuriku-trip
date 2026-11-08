@@ -1,6 +1,6 @@
 (function(root){
  'use strict';
- const fields={itinerary:['id','name','area','note','day'],prep:['id','name','area','done'],arrival:['id','name','area','done'],restaurants:['id','name','area','cuisine','note'],shopping:['id','name','area','place','qty','price','done','note']};
+ const fields={itinerary:['id','name','area','note','day','mapUrl'],prep:['id','name','area','done'],arrival:['id','name','area','done'],restaurants:['id','name','area','cuisine','note'],shopping:['id','name','area','place','qty','price','done','note']};
  const clone=value=>value===undefined?undefined:JSON.parse(JSON.stringify(value));
  const equal=(a,b)=>{if(a===b)return true;if(a===undefined||b===undefined)return false;if(Array.isArray(a)||Array.isArray(b))return Array.isArray(a)&&Array.isArray(b)&&a.length===b.length&&a.every((v,i)=>equal(v,b[i]));if(a&&b&&typeof a==='object'&&typeof b==='object'){const keys=[...new Set([...Object.keys(a),...Object.keys(b)])];return keys.every(k=>equal(a[k],b[k]))}return false};
  function shared(state){const result={};for(const [type,allowed] of Object.entries(fields)){result[type]=(state[type]||[]).map(item=>{const row={};for(const key of allowed)if(item[key]!==undefined&&['string','number','boolean'].includes(typeof item[key]))row[key]=item[key];return row})}return result}

@@ -30,7 +30,7 @@
   if(auth)await freshSession();
   const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),15000);
   try{const response=await fetch(config.url+path,{method,headers:{apikey:config.key,...(auth?{Authorization:'Bearer '+session.access_token}:token?{Authorization:'Bearer '+token}:{}),'Content-Type':'application/json'},body:body===undefined?undefined:JSON.stringify(body),signal:controller.signal,cache:'no-store'});
-   const result=await response.json().catch(()=>null);if(!response.ok){if(response.status===401)throw Error('登入已過期，請登出後重新登入；本機修改仍保留');throw Error(result?.msg||result?.message||result?.error_description||'雲端請求失敗（'+response.status+'）')}return result;
+   const result=await response.json().catch(()=>null);if(!response.ok){if(result?.code==='PGRST202'&&path.includes('save_family_trip_v12'))throw Error('請先在 Supabase SQL Editor 執行 cloud/upgrade-v12.sql，以啟用備用行程與地圖網址同步');if(response.status===401)throw Error('登入已過期，請登出後重新登入；本機修改仍保留');throw Error(result?.msg||result?.message||result?.error_description||'雲端請求失敗（'+response.status+'）')}return result;
   }finally{clearTimeout(timeout)}
  }
  async function freshSession(){
@@ -39,7 +39,7 @@
   storeSession({...next,expires_at:Math.floor(Date.now()/1000)+next.expires_in});
  }
  async function readCloud(){const rows=await request('/rest/v1/family_trip?select=data,revision,updated_at&user_id=eq.'+encodeURIComponent(session.user.id));if(!Array.isArray(rows))throw Error('雲端回應格式錯誤');if(!rows.length)return null;validate(rows[0].data);return {...rows[0],data:Core.shared(rows[0].data)}}
- async function upload(data,revision){return request('/rest/v1/rpc/save_family_trip',{method:'POST',body:{expected_revision:revision,new_data:Core.shared(data)}})}
+ async function upload(data,revision){return request('/rest/v1/rpc/save_family_trip_v12',{method:'POST',body:{expected_revision:revision,new_data:Core.shared(data)}})}
  function persistMetadata(base,revision){state._cloudSync={version:1,account:account(),base:Core.clone(base),revision};save()}
  function applyCloud(data,base,revision){
   if(!safe())return false;const next=Core.clone(state);
