@@ -1,1 +1,9 @@
-{"name":"hokuriku-sakura-pwa","private":true,"version":"1.0.0","scripts":{"test":"node --test tests/*.test.cjs","start":"node tools/serve.cjs"}}
+{
+  "name": "hokuriku-family-sync-pwa",
+  "private": true,
+  "version": "1.1.0",
+  "scripts": {
+    "test": "node --test tests/*.test.cjs",
+    "start": "node tools/serve.cjs"
+  }
+}

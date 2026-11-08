@@ -95,3 +95,9 @@ header{background:linear-gradient(140deg,#f8fbef,#e3efcd);color:#2f573b;box-shad
 @media(min-width:700px){header{padding-right:max(20px,calc((100vw - 850px)/2))}.trip-hero{max-height:330px}.trip-hero>img{height:330px;object-position:center 49%}}
 @media(max-width:400px){.tabs{gap:6px}.tabs button{padding:6px 9px;font-size:13px}.trip-hero{border-width:3px;border-radius:19px}.trip-hero>span{font-size:12px;padding:7px 10px}.pokemon-parade{gap:6px}.footer{gap:6px}.footer .btn{padding:6px 8px}}
 
+/* Shared family trip controls */
+[hidden]{display:none!important}
+.cloud-panel{position:relative;z-index:2;max-width:840px;margin:12px auto;background:#fffdf5;border:1px solid #d7e4c9;border-radius:18px;box-shadow:0 5px 16px #3955300c;color:#3f5b3f}
+.cloud-panel>summary{cursor:pointer;padding:14px;min-height:48px;font-weight:650;line-height:1.6}.cloud-panel>summary span{display:block;font-size:12px;font-weight:400;margin-left:20px;color:#66765a}.cloud-body{padding:0 16px 16px}.cloud-body p{font-size:13px;line-height:1.7;overflow-wrap:anywhere}.cloud-body .btn:disabled{opacity:.55;cursor:wait}.cloud-conflict{padding:12px;margin:12px 0;background:#fff9e6;border:1px solid #e8dba5;border-radius:12px;overflow-wrap:anywhere}.cloud-conflict strong{font-size:12px}.cloud-conflict label{display:flex;align-items:flex-start;gap:9px;color:#514c38;line-height:1.7;white-space:pre-wrap}.cloud-conflict input{width:22px;height:22px;flex:0 0 22px;margin-top:3px;accent-color:#487849}
+@media(max-width:880px){.cloud-panel{margin:12px}}
+
