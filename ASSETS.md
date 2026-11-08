@@ -32,3 +32,5 @@
 圖片已儲存於本機 assets 並加入 Service Worker 預快取，執行時不會向素材網站發出圖片請求。裝飾不接收觸控事件，不改動資料或原有按鍵文字。系統「減少動態效果」設定依然有效。
 
 Pikmin characters and artwork © Nintendo. Pokémon © Nintendo / Creatures Inc. / GAME FREAK inc. 角色素材的權利屬各原權利人；本 App 為個人旅行工具。
+
+同步狀態角色：使用者確認之外觀樣圖衍生的透明角色素材（AI 生成，參照 Nintendo 羽翅皮克敏）；翅膀為獨立 SVG 動畫層。

@@ -6,7 +6,14 @@
  const account=()=>config.url+'|'+session.user.id;
  const meta=()=>state._cloudSync?.account===account()?state._cloudSync:null;
  const safe=()=>!storageBlocked&&!document.hidden&&!$('editor').open&&!document.body.classList.contains('is-dragging');
- function message(text){status=text;$('cloud-status').textContent=text;$('cloud-detail').textContent=text}
+ let visualState='signedout';
+ function message(text,phase){
+  status=text;$('cloud-status').textContent=text;$('cloud-detail').textContent=text;
+  if(phase)visualState=phase;
+  const labels={syncing:'同步',synced:'同步',pending:'等待同步',offline:'未連線Server',error:'未連線Server',signedout:'尚未登入',setup:'尚未連接共用行程',conflict:'需要確認',paused:'同步暫停'};
+  $('cloud-panel').dataset.syncState=visualState;
+  const label=$('cloud-label');if(label.textContent!==labels[visualState])label.textContent=labels[visualState];
+ }
  function showControls(){
   const logged=Boolean(session);$('cloud-login').hidden=logged;$('cloud-account').hidden=!logged;
   $('cloud-email-label').textContent=logged?session.user.email||'家庭帳號':'';
@@ -53,15 +60,15 @@
    const choices={};for(const c of conflicts){const selected=[...box.querySelectorAll('input')].find(input=>input.name==='conflict-'+c.path&&input.checked);if(!selected){message('請為每一筆衝突選擇版本');return}choices[c.path]=selected.value}
    // Choices are bound to exact local/remote versions. Never reuse after either changed.
    synchronize({choices,expectedLocal:cloudConflictLocal,expectedRemote:cloudConflictRemote});
-  };box.append(button);message('有 '+found.length+' 筆同時修改，請選擇保留版本');
+  };box.append(button);message('有 '+found.length+' 筆同時修改，請選擇保留版本','conflict');
  }
  let cloudConflictRemote=null,cloudConflictLocal=null;
- function onboarding(cloud){$('cloud-onboarding').hidden=false;$('cloud-create').hidden=Boolean(cloud);$('cloud-adopt').hidden=!cloud;message(cloud?'雲端已有行程。請先選擇使用雲端內容；此裝置會先備份。':'雲端尚無行程。請在資料最完整的裝置建立共用行程。')}
+ function onboarding(cloud){$('cloud-onboarding').hidden=false;$('cloud-create').hidden=Boolean(cloud);$('cloud-adopt').hidden=!cloud;message(cloud?'雲端已有行程。請先選擇使用雲端內容；此裝置會先備份。':'雲端尚無行程。請在資料最完整的裝置建立共用行程。','setup')}
  async function synchronize(options={}){
   if(busy){pending=true;return}if(!session||!config||errorPaused)return;
-  if(!navigator.onLine){message('離線中：修改已留在此裝置，連線後自動同步');return}
-  if(!safe()){message(storageBlocked?'本機資料已鎖定，請重新載入':'編輯完成後會繼續同步');return}
-  busy=true;showControls();
+  if(!navigator.onLine){message('離線中：修改已留在此裝置，連線後自動同步','offline');return}
+  if(!safe()){message(storageBlocked?'本機資料已鎖定，請重新載入':'編輯完成後會繼續同步',storageBlocked?'paused':visualState);return}
+  busy=true;showControls();message('正在與 Server 同步行程…','syncing');
   try{
    for(let attempt=0;attempt<4;attempt++){
     const cloud=await readCloud();if(!safe())return;
@@ -76,18 +83,18 @@
     if(!Core.equal(merged.data,cloud.data)){
      acknowledged=await upload(merged.data,cloud.revision);if(!acknowledged.ok){options={};continue}
      // Remember the snapshot that was successfully sent even if another local edit happened in flight.
-     if(!safe()){persistMetadata(local,acknowledged.revision);pending=true;message('已上傳；結束編輯後會套用最新內容');return}
+     if(!safe()){persistMetadata(local,acknowledged.revision);pending=true;message('已上傳；結束編輯後會套用最新內容','pending');return}
     }
     const latest=Core.shared(state),rebased=Core.merge(local,latest,acknowledged.data);
     if(rebased.conflicts.length){persistMetadata(local,acknowledged.revision);cloudConflictRemote=Core.clone(acknowledged.data);showConflicts(rebased.conflicts);return}
     applyCloud(rebased.data,acknowledged.data,acknowledged.revision);
     const dirty=!Core.equal(rebased.data,acknowledged.data);
-    message(dirty?'此裝置有新修改，繼續上傳中…':'已同步 · '+new Date().toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit',second:'2-digit'}));
+    message(dirty?'此裝置有新修改，繼續上傳中…':'已同步 · '+new Date().toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit',second:'2-digit'}),dirty?'syncing':'synced');
     if(dirty){options={};continue}return;
    }
-   message('其他裝置正在修改，稍後自動重試');
-  }catch(error){message('尚未完成同步：'+(error.name==='AbortError'?'連線逾時，稍後重試':error.message)+'。本機內容保留');}
-  finally{busy=false;showControls();if(pending){pending=false;schedule(1200)}}
+   message('其他裝置正在修改，稍後自動重試','pending');
+  }catch(error){message('尚未完成同步：'+(error.name==='AbortError'?'連線逾時，稍後重試':error.message)+'。本機內容保留','error');}
+  finally{busy=false;showControls();if(!navigator.onLine)message('離線中：修改保留，連線後自動同步','offline');if(pending){pending=false;schedule(1200)}}
  }
  function schedule(ms=700){clearTimeout(timer);timer=setTimeout(()=>synchronize(),ms)}
  async function initializeCloud(useLocal){
@@ -99,25 +106,25 @@
    backupLocal();
    if(useLocal){const local=Core.shared(state);const result=await upload(local,0);if(!result.ok){message('另一裝置已建立雲端行程，請改選使用雲端內容');return}persistMetadata(local,result.revision)}
    else if(!applyCloud(cloud.data,cloud.data,cloud.revision))throw Error('請先完成編輯再連接雲端');
-   $('cloud-onboarding').hidden=true;message('已連接家庭行程，開始自動同步');pending=true;
-  }catch(error){message('連接失敗：'+error.message+'；本機資料仍保留')}finally{busy=false;showControls();if(pending){pending=false;schedule()}}
+   $('cloud-onboarding').hidden=true;message('已連接家庭行程，開始自動同步','syncing');pending=true;
+  }catch(error){message('連接失敗：'+error.message+'；本機資料仍保留','error')}finally{busy=false;showControls();if(pending){pending=false;schedule()}}
  }
  $('cloud-login').addEventListener('submit',async event=>{
   event.preventDefault();if(busy)return;busy=true;showControls();$('cloud-login-button').disabled=true;
   try{
    const selected=checkConfig($('cloud-url').value.trim(),$('cloud-key').value.trim());const prior=config;config=selected;
    let next;try{next=await request('/auth/v1/token?grant_type=password',{method:'POST',auth:false,body:{email:$('cloud-email').value.trim(),password:$('cloud-password').value}})}catch(error){config=prior;throw error}
-   localStorage.setItem(CONFIG,JSON.stringify(selected));storeSession({...next,expires_at:Math.floor(Date.now()/1000)+next.expires_in});$('cloud-password').value='';message('已登入，正在確認共用行程');pending=true;
-  }catch(error){message('登入失敗：'+error.message)}finally{busy=false;$('cloud-login-button').disabled=false;showControls();if(pending){pending=false;schedule()}}
+   localStorage.setItem(CONFIG,JSON.stringify(selected));storeSession({...next,expires_at:Math.floor(Date.now()/1000)+next.expires_in});$('cloud-password').value='';message('已登入，正在確認共用行程','syncing');pending=true;
+  }catch(error){message('登入失敗：'+error.message,'error')}finally{busy=false;$('cloud-login-button').disabled=false;showControls();if(pending){pending=false;schedule()}}
  });
  $('cloud-logout').onclick=async()=>{
   if(busy)return;if(!confirm('登出此裝置？尚未上傳的修改仍保留在本機，登入原帳號後可繼續同步。'))return;
   busy=true;showControls();try{if(navigator.onLine)await request('/auth/v1/logout?scope=local',{method:'POST'})}catch{/* Local sign-out still removes this device's session. */}
-  finally{localStorage.removeItem(SESSION);session=null;clearTimeout(timer);clearConflicts();$('cloud-onboarding').hidden=true;busy=false;message('已登出；本機內容保留');showControls()}
+  finally{localStorage.removeItem(SESSION);session=null;clearTimeout(timer);clearConflicts();$('cloud-onboarding').hidden=true;busy=false;message('已登出；本機內容保留','signedout');showControls()}
  };
  $('cloud-now').onclick=()=>synchronize();$('cloud-create').onclick=()=>initializeCloud(true);$('cloud-adopt').onclick=()=>initializeCloud(false);
- addEventListener('trip-local-save',()=>{if(session){message('已儲存在此裝置 · 等待上傳');schedule()}});
- addEventListener('online',()=>schedule(100));addEventListener('offline',()=>message(session?'離線中：可繼續編輯，連線後自動上傳':'尚未登入雲端；內容只在此裝置'));
+ addEventListener('trip-local-save',()=>{if(session){message('已儲存在此裝置 · 等待上傳',!navigator.onLine?'offline':meta()?'pending':'setup');schedule()}});
+ addEventListener('online',()=>schedule(100));addEventListener('offline',()=>message(session?'離線中：可繼續編輯，連線後自動上傳':'尚未登入雲端；內容只在此裝置','offline'));
  document.addEventListener('visibilitychange',()=>{if(!document.hidden)schedule(100)});
  $('editor').addEventListener('close',()=>schedule());
  setInterval(()=>{if(!document.hidden&&session&&!conflicts.length)synchronize()},5000);
@@ -126,7 +133,7 @@
   else if(window.TRIP_CLOUD_CONFIG?.url)config=checkConfig(window.TRIP_CLOUD_CONFIG.url,window.TRIP_CLOUD_CONFIG.key);
   const saved=localStorage.getItem(SESSION);if(saved&&config){const parsed=JSON.parse(saved);if(!parsed.user?.id||!parsed.access_token||!parsed.refresh_token)throw Error('登入狀態無效');session=parsed}
   $('cloud-url').value=config?.url||'';$('cloud-key').value=config?.key||'';
- }catch{errorPaused=true;message('同步設定無法讀取。請保留本機備份，清除同步設定後再登入。')}
- $('cloud-reset').onclick=()=>{if(busy)return;if(!confirm('只清除本機的雲端設定與登入狀態，保留所有行程及護照資料？'))return;localStorage.removeItem(CONFIG);localStorage.removeItem(SESSION);session=null;config=null;errorPaused=false;clearConflicts();$('cloud-onboarding').hidden=true;showControls();message('同步設定已清除，可重新登入')};
- showControls();if(session)schedule(100);else message(status);
+ }catch{errorPaused=true;message('同步設定無法讀取。請保留本機備份，清除同步設定後再登入。','error')}
+ $('cloud-reset').onclick=()=>{if(busy)return;if(!confirm('只清除本機的雲端設定與登入狀態，保留所有行程及護照資料？'))return;localStorage.removeItem(CONFIG);localStorage.removeItem(SESSION);session=null;config=null;errorPaused=false;clearConflicts();$('cloud-onboarding').hidden=true;showControls();message('同步設定已清除，可重新登入','signedout')};
+ showControls();if(session){message(navigator.onLine?'正在確認 Server 連線…':'離線中：連線後自動同步',navigator.onLine?'pending':'offline');schedule(100)}else message(status,errorPaused?'error':navigator.onLine?'signedout':'offline');
 })();
