@@ -19,12 +19,33 @@ test('rental edits cascade, retain interval widths and persist without moving fl
  b.change(event({rentalStep:'0'},{type:'time',value:'08:30'}));
  b.change(event({rentalStep:'2'},{type:'time',value:'13:10'}));
  const state=JSON.parse(b.storage.getItem(C.KEY));
- assert.deepEqual(state.inputs.rentalStarts,['08:30','10:30','13:10','13:40','15:10','15:55']);
- assert.equal(state.inputs.rentalEta,'16:25');
+ assert.deepEqual(state.inputs.rentalStarts,['08:30','10:30','13:10','13:40','15:10','15:55','16:00','16:20','16:50']);
+ assert.equal(state.inputs.rentalEta,'15:55');
  let html=boot(b.storage).html();
  assert.match(html,/17:35/);assert.match(html,/step-5/);
  b.change(event({returnField:'inputs.airportArrival'},{type:'time',value:'15:00'}));
- assert.match(b.html(),/距離起飛 3小時 35分/);
+ assert.match(b.html(),/距離起飛 1小時 45分/);
  b.change(event({boardingTime:''},{type:'time',value:'18:00'}));
- html=boot(b.storage).html();assert.match(html,/data-boarding-time value="18:00"/);assert.equal(JSON.parse(b.storage.getItem(C.KEY)).inputs.rentalStarts[0],'08:55');assert.match(html,/距離登機 3小時 0分/);assert.match(html,/距離起飛 4小時 0分/);
+ html=boot(b.storage).html();assert.match(html,/data-boarding-time value="18:00"/);assert.equal(JSON.parse(b.storage.getItem(C.KEY)).inputs.rentalStarts[0],'08:55');assert.match(html,/距離開放登機 45 分鐘/);assert.match(html,/距離起飛 1小時 45分/);
+});
+test('arrival window and boarding warning stay legible alongside a separately recorded actual arrival',()=>{
+ const b=boot();b.change(event({rentalStep:'5'},{type:'time',value:'17:16'}));
+ b.change(event({returnField:'inputs.airportArrival'},{type:'time',value:'16:00'}));
+ const html=b.html();assert.match(html,/目標抵達航廈時間　17:16/);assert.match(html,/已超過開放登機時間 36 分鐘/);
+ assert.match(html,/開放登機　17:35/);assert.match(html,/CI371 起飛　18:35/);assert.ok(!html.includes('目標抵達 17:16'));b.change(event({rentalStep:'5'},{type:'time',value:'21:16'}));assert.match(b.html(),/已超過開放登機時間 4小時 36分/);
+});
+test('manually set arrival and airport milestones move together after changing departure on a reopened plan',()=>{
+ const b=boot();
+ const change=(app,i,value)=>app.change(event({rentalStep:String(i)},{type:'time',value}));
+ change(b,5,'17:16');
+ change(b,7,'17:33');
+ const reopened=boot(b.storage);
+ change(reopened,3,'14:00');
+ const html=reopened.html();
+ for(const label of ['還車及檢查時段　15:30～16:15','目標抵達航廈時間　16:15','退稅　16:20','櫃檯報到　16:32','出關　17:02','開放登機　17:35','距離開放登機 33 分鐘'])assert.ok(html.includes(label),label);
+ assert.ok(!html.includes('出關時間晚於開放登機'));
+});
+test('13:30 departure leaves 55 minutes from exit to boarding opening',()=>{
+ const b=boot();b.change(event({rentalStep:'3'},{type:'time',value:'13:30'}));
+ const html=b.html();assert.match(html,/出關　16:40/);assert.match(html,/距離開放登機 55 分鐘/);assert.match(html,/距離起飛 1小時 55分/);
 });

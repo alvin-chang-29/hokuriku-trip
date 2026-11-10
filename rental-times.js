@@ -1,21 +1,40 @@
 'use strict';
 const RentalTimes = (() => {
-  const windows = ['08:00','10:00','12:30','13:00','14:30-15:15','15:15-15:45'];
+  const windows = ['08:00','10:00','12:30','13:00','14:30-15:15','15:15'];
   function schedule(inputs) {
     const saved = inputs.rentalStarts || windows.map(w => w.split('-')[0]);
-    return windows.map((w,i) => {
+    const journey = windows.map((w,i) => {
       const [first,last=first] = w.split('-');
       const start = ReturnCore.minutes(saved[i]) ?? ReturnCore.minutes(first);
       return {start,end:start + ReturnCore.minutes(last) - ReturnCore.minutes(first)};
     });
+    const arrival = journey[5].start;
+    const airportSteps = [5, 25, 55].map((offset, index) => {
+      const start = ReturnCore.minutes(saved[6 + index]) ?? Math.min(1439, arrival + offset);
+      return {start, end:start};
+    });
+    return journey.concat(airportSteps);
   }
   function shift(inputs,index,value) {
     const rows = schedule(inputs), next = ReturnCore.minutes(value);
     if(next === null || (index && next < rows[index-1].start)) throw Error('請輸入不早於上一個行程點的時間。');
     const delta = next - rows[index].start;
-    if(rows.at(-1).end + delta >= 1440) throw Error('調整後超出12/10，請重新設定時間。');
-    inputs.rentalStarts = rows.map((row,i) => ReturnCore.time(row.start + (i>=index ? delta : 0)));
-    inputs.rentalEta = ReturnCore.time(rows.at(-1).end + delta);
+    const arrivalIndex = 5;
+    const returnIndex = 4;
+    const starts = rows.map((row, i) => row.start + (i >= index ? delta : 0));
+    if (delta !== 0 && index <= returnIndex) {
+      // The original plan reaches the terminal at the end of the return window.
+      // An earlier manual arrival is an absolute target, not extra transfer time.
+      const arrival = rows[returnIndex].end + delta;
+      for (let i = arrivalIndex; i < rows.length; i++) {
+        starts[i] = arrival + rows[i].start - rows[arrivalIndex].start;
+      }
+    }
+    if (starts.some((start, i) => start < 0 || start + rows[i].end - rows[i].start >= 1440)) {
+      throw Error('調整後超出12/10，請重新設定時間。');
+    }
+    inputs.rentalStarts = starts.map(ReturnCore.time);
+    inputs.rentalEta = inputs.rentalStarts[arrivalIndex];
   }
   function duration(n) {
     return Math.floor(Math.abs(n)/60)+'小時 '+Math.abs(n)%60+'分';

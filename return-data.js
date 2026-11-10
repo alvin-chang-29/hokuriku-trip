@@ -135,7 +135,7 @@ globalThis.HOKURIKU_RETURN={
         },
         {
           "time": "13:00",
-          "title": "建議出發前往富山機場",
+          "title": "出發前往富山機場",
           "note": "依租車還車地點與天氣調整"
         },
         {
