@@ -3,3 +3,4 @@
 .return-step details>summary{cursor:pointer;padding:8px 0;color:#713951}.return-boarding{background:#ffe6ef;border-left-color:#ac3e65}.return-boarding .return-check{font-weight:750;color:#702944}
 
 .return-page .boarding-countdown{display:block;color:#af1735;font-size:clamp(1.55rem,5vw,2.15rem);font-weight:800;line-height:1.35;margin:6px 0}
+.execution-item-controls{margin:4px 0 12px}.execution-editor{width:min(90vw,440px);max-height:80dvh;overflow:auto;border:1px solid #e3bdcb;border-radius:18px;padding:20px;background:#fffafb;color:#392c32}.execution-editor label{display:block;margin-bottom:12px}.execution-editor input{width:100%;box-sizing:border-box;padding:10px;font-size:16px}.execution-editor::backdrop{background:#29202b77}
