@@ -56,7 +56,7 @@ grant execute on function public.save_family_trip_v12(bigint,jsonb) to authentic
 
 -- Old clients must not silently discard map URLs or unassigned trips.
 create or replace function public.save_family_trip(expected_revision bigint, new_data jsonb)
-returns jsonb language plpgsql security definer set search_path='' as $
+returns jsonb language plpgsql security definer set search_path='' as $$
 declare current_data jsonb; owner_id uuid := auth.uid();
 begin
  if owner_id is null then raise exception 'Authentication required'; end if;
@@ -66,7 +66,7 @@ begin
   raise exception '請更新三台裝置至 v12 後再同步；舊版不支援備用行程與地圖網址';
  end if;
  return public.save_family_trip_v12(expected_revision,new_data);
-end $;
+end $$;
 revoke all on function public.save_family_trip(bigint,jsonb) from public,anon;
 grant execute on function public.save_family_trip(bigint,jsonb) to authenticated;
 
