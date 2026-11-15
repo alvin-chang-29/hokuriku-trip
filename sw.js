@@ -1,5 +1,5 @@
 const PREFIX='hokuriku-sakura-shell-'+new URL(self.registration.scope).pathname+'-';
-const CACHE=PREFIX+'v26b-bundled-1';
+const CACHE=PREFIX+'v26c-proportion-1';
 const SHELL=["./","./index.html","./app-v26b.js","./app-v26b.css","./manifest.webmanifest","./apple-touch-icon-v10.png","./app-icon-192-v10.png","./app-icon-512-v10.png","./app-icon-maskable-v10.png","./favicon-v10.png"];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(SHELL))));
 // 等所有舊視窗關閉才啟用，避免開啟中的編輯介面混用新舊版本。
