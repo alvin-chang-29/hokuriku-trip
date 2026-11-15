@@ -1,0 +1,7 @@
+(()=>{const canvas=document.getElementById('family-canvas'),ctx=canvas.getContext('2d'),scene=document.getElementById('hero-scene');let images=[],frame=0,last=0;function draw(){if(images.length!==3)return;ctx.clearRect(0,0,1280,720);ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';ctx.drawImage(images[2],0,0,1280,720);const n=Math.floor(frame/2),col=n%4,row=Math.floor(n/4);const p=images[0],k=images[1],pw=p.width/4,ph=p.height/2,kw=k.width/4,kh=k.height/2;
+ctx.save(); ctx.translate(102.4,115.2); ctx.scale(.84,.84);
+ ctx.drawImage(p,col*pw,row*ph,pw,ph,280,0,720,720);
+// Display original pixels through a source rectangle; no regenerated faces, warping or cross-fade.
+function child(sx,sw,dx,dw){ctx.save();ctx.translate(dx+dw,0);ctx.scale(-1,1);ctx.drawImage(k,col*kw+sx,row*kh,sw,kh,0,100,dw,620);ctx.restore()}
+child(0,kw*.60,50,372);child(kw*.60,kw*.40,958,248); ctx.restore();
+}function tick(t){if(scene.dataset.running==='true'&&scene.dataset.visible==='true'&&!document.hidden&&t-last>=50){frame=(frame+1)%16;last=t;draw()}requestAnimationFrame(tick)}Promise.all(['family-parents.png','family-children.png','family-meadow.png'].map(n=>new Promise((resolve,reject)=>{const i=new Image();i.onload=()=>resolve(i);i.onerror=reject;i.src='./assets/'+n}))).then(i=>{images=i;draw();requestAnimationFrame(tick)}).catch(()=>{canvas.setAttribute('aria-label','動畫圖片載入失敗')})})();

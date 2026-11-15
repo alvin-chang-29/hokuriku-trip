@@ -26,7 +26,7 @@
     return entries;
   }
   function create(storage, fallback, device) {
-    return {format:'hokuriku-full-local-backup',version:1,appVersion:'V24-backup',
+    return {format:'hokuriku-full-local-backup',version:1,appVersion:'V26',
       exportedAt:new Date().toISOString(),device,entries:collect(storage,fallback)};
   }
   function validateEntries(entries, validateMain) {
